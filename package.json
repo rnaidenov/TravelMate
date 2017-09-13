@@ -1,0 +1,20 @@
+{
+  "name": "travel-made",
+  "version": "1.0.0",
+  "description": "Chatbot, which can help you find your way around in a foreign country.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "app": "cd src && nodemon travelMate.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/vision": "^0.12.0",
+    "botbuilder": "^3.9.0",
+    "image-downloader": "^3.2.2",
+    "nodemon": "^1.12.0",
+    "request": "^2.81.0",
+    "restify": "^5.0.1"
+  }
+}
