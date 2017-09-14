@@ -89,7 +89,7 @@ function _getWebResults(filename) {
     });
 }
 
-function _findArticle(landmark) {
+function summarizeArticle(landmark) {
 
     return new Promise((resolve, reject) => {
         request.get(_generateSearchQuery(landmark), (err, res, body) => {
@@ -103,12 +103,20 @@ function _findArticle(landmark) {
 function _generateSearchQuery(landmark) {
     const wikipedia_base_url = 'https://en.wikipedia.org/wiki/';
     const smmry_base_url = 'http://api.smmry.com';
-    const numSentences = 20;
+    const numSentences = 9;
 
     return `${smmry_base_url}/&SM_API_KEY=${smmryApiKey}&SM_LENGTH=${numSentences}&SM_URL=${wikipedia_base_url}${landmark}`;
 }
 
+
+// summarizeArticle("Vasil Levski National Stadium").then(facts => {
+//     facts.forEach((fact,idx) => {
+//         console.log(fact);
+//     })
+// });
+
 module.exports = {
     recognize,
-    getWebEntities
+    getWebEntities,
+    summarizeArticle
 }
