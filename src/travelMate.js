@@ -1,6 +1,7 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 const LandmarkRecognizer = require('./landmarkRecognizer');
+const SimilarityChecker = require('./similarityChecker');
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -49,22 +50,23 @@ bot.dialog("travel", [
         }
     },
     (session, results) => {
+        session.dialogData.landmark = results.response.landmark;
         if (results.response.isLandmark) {
-            session.beginDialog('learnMore',{ landmark: results.response.landmark });
+            session.replaceDialog('learnMore', { landmark: results.response.landmark });
         } else if (results.response.wrongEntityGuess) {
-            session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, secondTry: true, entityChoice:1 });
+            session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, secondTry: true, secondGuess: true, triedOnce : false });
         } else {
             const { previousGuess, landmark } = results.response;
-            session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, secondTry: true, previousGuess, landmark });
+            session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, secondTry: true, previousGuess, landmark, triedOnce : false });
         }
     },
     (session, results) => {
         if (results.response.isLandmark) {
-            session.send("Yes, go me!");
+            session.dialogData.landmark = results.response.landmark;
+            session.replaceDialog('learnMore', { landmark: results.response.landmark });
         } else {
-            builder.Prompts.text(session, "Shoot! I give up. What is it?");
+            session.replaceDialog('cannotRecognize', { previousGuess: session.dialogData.landmark });
         }
-        
     }
 ]);
 
@@ -90,22 +92,30 @@ bot.dialog('recognizeLandmark', [
 
 bot.dialog('recognizeWebEntity', [
     (session, args) => {
+        session.sendTyping();
         const imageUrl = args.imageUrl;
         const previousGuess = '' || args.landmark;
+        const triedOnce = true || args.triedOnce;
+
         let entityChoice = 0;
         let uncertainMessage = "I'm really not sure.. I think it might be the %s.";
-        if (args.entityChoice) {
+        if (args.secondGuess) {
             entityChoice = 1;
             uncertainMessage = "How about the %s?";
         }
-        
+
         LandmarkRecognizer.getWebEntities(imageUrl).then(entities => {
             const landmark = entities[entityChoice];
-            if (previousGuess === landmark) {
-                session.send(`I\'m pretty sure that is ${landmark} :)`);
+            if (!landmark) {
+                session.replaceDialog('cannotRecognize');
             } else {
-                session.send(uncertainMessage,landmark);
-                session.replaceDialog('verifyLandmark', { wrongEntityGuess: true, landmark });
+                if (!triedOnce && previousGuess === landmark) {
+                    session.send(`I\'m pretty sure that is ${landmark} :)`);
+                    session.replaceDialog('learnMore', { landmark });
+                } else {
+                    session.send(uncertainMessage, landmark);
+                    session.replaceDialog('verifyLandmark', { wrongEntityGuess: true, landmark });
+                }
             }
         });
     }
@@ -144,7 +154,7 @@ bot.dialog('verifyLandmark', [
         results.response.includes('Yes') ? isLandmark = true : isLandmark = false;
         session.endDialogWithResult({
             response: {
-                landmark : session.dialogData.landmark,
+                landmark: session.dialogData.landmark,
                 isLandmark,
                 wrongEntityGuess: session.dialogData.wrongEntityGuess
             }
@@ -153,30 +163,81 @@ bot.dialog('verifyLandmark', [
 ]);
 
 bot.dialog('learnMore', [
-    (session,args) => {
+    (session, args) => {
         const landmark = args.landmark;
-        var msg = new builder.Message(session);
-        msg.attachmentLayout(builder.AttachmentLayout.carousel);
-        _getLandmarkInfo(landmark,session).then(factCards => {
-            msg.attachments(factCards);
-            session.send(msg).endDialog();
-        })
+        session.send('Okay, cool!');
+        session.sendTyping();
+        setTimeout(() => {
+            session.send(`Let me give you some info about the ${landmark}.`);
+            session.sendTyping();
+            var msg = new builder.Message(session);
+            msg.attachmentLayout(builder.AttachmentLayout.carousel);
+            _getLandmarkInfo(landmark, session).then(factCards => {
+                msg.attachments(factCards);
+                session.send(msg).replaceDialog('anythingElse');
+            })
+        },2000);
     }
 ])
 
-function _getLandmarkInfo (landmark,session) {
+function _getLandmarkInfo(landmark, session) {
     const factCards = [];
     return new Promise((resolve, reject) => {
         LandmarkRecognizer.summarizeArticle(landmark).then(facts => {
-            facts.forEach((fact,idx) => {
-                
+            facts.forEach((fact, idx) => {
+
                 factCards.push(new builder.HeroCard(session)
-                                .title("Did you know that?")
-                                .subtitle(`Fact #${idx}`)
-                                .text(fact)
+                    .title("Did you know that?")
+                    .subtitle(`Fact #${idx + 1}`)
+                    .text(fact)
                 );
             })
             resolve(factCards);
         })
     })
 }
+
+bot.dialog('cannotRecognize', [
+    (session, args) => {
+        if (args) {
+            session.dialogData.previousGuess = args.previousGuess;
+        }
+        builder.Prompts.text(session, "Shoot! I give up. What's the name of this landmark?");
+    },
+    (session, results) => {
+        const previousGuess = session.dialogData.previousGuess;
+
+        if (SimilarityChecker.check(previousGuess, results.response) > 0.85) {
+            session.send(`I knew it was the ${previousGuess}. Why are you messing with me?`);
+
+            const ensureUserWantsInfoMsg = new builder.Message(session)
+                .text(`Do you want some information about the ${previousGuess}?`)
+                .suggestedActions(
+
+                builder.SuggestedActions.create(
+                    session, [
+                        builder.CardAction.imBack(session, "Yes, sorry about that.", "Yes!"),
+                        builder.CardAction.imBack(session, "No, that's alright. I just wanted to have some fun.", "No.")
+                    ]
+                ));
+            builder.Prompts.text(session, ensureUserWantsInfoMsg);
+        }
+    },
+    (session, results) => {
+        if (results.response.includes('Yes')) {
+            session.replaceDialog('learnMore',{ landmark: session.dialogData.previousGuess })
+        } else {
+            session.endConversation("Okay, goodbye then :).");
+        }
+    }
+])
+
+
+bot.dialog('anythingElse',(session) => {
+    session.send("Anything else I can help you with?");
+})
+
+// TODO: New dialog 'Do you want anything else?
+
+// Can't guess -> Web entity guess -> wrong -> type landmark -> what happens?
+// Buckingham Palace -> Buckingham Palace -> I'm really not sure.. I think it might be the Buckingham Palace. (needs to be I'm pretty sure ...)

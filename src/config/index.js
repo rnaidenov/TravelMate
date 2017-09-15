@@ -1,11 +1,9 @@
 const configValues = require ('./config');
 
 module.exports = {
-  getDBConnectionString : () => {
-    return `mongodb://${configValues.username}:${configValues.pass}@ds161001.mlab.com:61001/fest-with-me`
-  },
-  amadeusAPIKey : configValues.amadeusAPIKey,
-  googleAPIKey : configValues.googleAPIKey,
+  googleCloudVisionApiKey : configValues.googleCloudVisionApiKey,
+  googleCSEAPIKey : configValues.googleCSEAPIKey,
   googleCSE : configValues.googleCSE,
-  exchangeRatesAPIKey : configValues.exchangeRatesAPIKey
+  googleCloudVisionApiKey : configValues.googleCloudVisionApiKey,
+  smmryApiKey : configValues.smmryApiKey
 }
