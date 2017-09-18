@@ -1,6 +1,6 @@
 const config = require('./config');
 const cloudVisionUrl = "https://vision.googleapis.com/v1/images:annotate?key=";
-const ArticleFinder = require('./articleFinder');
+const FactFinder = require('./factFinder');
 const download = require('image-downloader');
 const Vision = require('@google-cloud/vision');
 const path = require('path');
@@ -27,10 +27,6 @@ function getWebEntities(url) {
         })
     })
 }
-
-getWebEntities("http://www.sofia-guide.com/assets/vasil_levski_stadium_above.jpg").then(res => {
-    console.log(res);
-})
 
 function _downloadImage(url) {
     return new Promise((resolve, reject) => {
@@ -93,33 +89,7 @@ function _getWebResults(filename) {
     });
 }
 
-function summarizeArticle(landmark) {
-    return new Promise((resolve, reject) => {
-        _generateSearchUrl(landmark).then(url => {
-            request.get(url, (err, res, body) => {
-                const { "sm_api_content": summary } = JSON.parse(body);
-                const sentences = summary.split('[BREAK]');
-                sentences.pop();
-                resolve(sentences);
-            });
-        });
-    })
-}
-
-function _generateSearchUrl(landmark) {
-
-    const smmry_base_url = 'http://api.smmry.com';
-    const numSentences = 10;
-
-    return new Promise ((resolve,reject) => {
-        ArticleFinder.getWikipediaLink(landmark).then(link => {
-            resolve(`${smmry_base_url}/&SM_API_KEY=${config.smmryApiKey}&SM_LENGTH=${numSentences}&SM_WITH_BREAK&SM_URL=${link}`)
-        })
-    });
-}
-
 module.exports = {
     recognize,
-    getWebEntities,
-    summarizeArticle
+    getWebEntities
 }
