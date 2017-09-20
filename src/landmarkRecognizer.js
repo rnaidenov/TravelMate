@@ -51,6 +51,7 @@ function _detect(filename) {
         vision.landmarkDetection({ source: { filename } })
             .then((results) => {
                 const landmarks = results[0].landmarkAnnotations;
+                console.log(landmarks)
                 if (landmarks.length) {
                     resolve(landmarks[0].description);
                 } else {
