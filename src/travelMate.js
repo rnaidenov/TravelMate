@@ -52,11 +52,15 @@ bot.dialog("travel", [
         }
     },
     (session, results) => {
-        const { landmark } = results.response;
+        const { landmark, confident } = results.response;
         session.dialogData.landmark = landmark;
 
         if (results.response.isLandmark === 'maybe') {
-            session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, secondGuess: true, kindOf: true, previousGuess: landmark });
+            if (confident) {
+                session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, kindOf: true, previousGuess: landmark });
+            } else {
+                session.beginDialog('recognizeWebEntity', { imageUrl: session.dialogData.imageUrl, kindOf: true, previousGuess: landmark, secondGuess: true });
+            }
         }
         else if (results.response.isLandmark) {
             session.replaceDialog('learnMore', { landmark: results.response.landmark });
@@ -91,7 +95,7 @@ bot.dialog('recognizeLandmark', [
         LandmarkRecognizer.recognize(imageUrl).then(landmark => {
             if (landmark !== null) {
                 session.send(`That looks like the ${landmark}.`);
-                session.replaceDialog('verifyLandmark', { landmark });
+                session.replaceDialog('verifyLandmark', { landmark, confident:true });
             } else {
                 session.replaceDialog('recognizeWebEntity', { imageUrl });
             }
@@ -105,7 +109,9 @@ bot.dialog('recognizeWebEntity', [
         session.sendTyping();
         const imageUrl = args.imageUrl;
         const previousGuess = '' || args.previousGuess;
+
         let entityChoice = 0;
+
         let uncertainMessage = "I'm really not sure.. I think it might be the %s.";
         if (args.secondGuess) {
             entityChoice = 1;
@@ -139,6 +145,7 @@ bot.dialog('verifyLandmark', [
         let wrongGuessMsg = "Nope, try again, buddy.";
         session.dialogData.landmark = args.landmark;
         session.dialogData.wrongEntityGuess = false;
+        session.dialogData.confident = false || args.confident;
 
         if (args.secondTry) {
             correctGuessMsg = "Yes, you got it this time.";
@@ -177,7 +184,8 @@ bot.dialog('verifyLandmark', [
             response: {
                 landmark: session.dialogData.landmark,
                 isLandmark,
-                wrongEntityGuess: session.dialogData.wrongEntityGuess
+                wrongEntityGuess: session.dialogData.wrongEntityGuess,
+                confident: session.dialogData.confident
             }
         });
     }
