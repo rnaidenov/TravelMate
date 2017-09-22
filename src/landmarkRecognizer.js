@@ -1,16 +1,15 @@
 const config = require('./config');
 const cloudVisionUrl = "https://vision.googleapis.com/v1/images:annotate?key=";
 const FactFinder = require('./factFinder');
-const download = require('image-downloader');
+const ImageDownloader = require('./imageDownloader');
 const Vision = require('@google-cloud/vision');
-const path = require('path');
 const vision = Vision();
 const request = require('request');
 const http = require('http');
 
-function recognize(url) {
+const recognize = (url) => {
     return new Promise((resolve, reject) => {
-        _downloadImage(url).then(filename => {
+        ImageDownloader.download(url).then(filename => {
             _detect(filename).then(res => {
                 resolve(res);
             });
@@ -18,9 +17,9 @@ function recognize(url) {
     })
 }
 
-function getWebEntities(url) {
+const getWebEntities = (url) => {
     return new Promise((resolve, reject) => {
-        _downloadImage(url).then(filename => {
+        ImageDownloader.download(url).then(filename => {
             _getWebResults(filename).then(res => {
                 resolve(res);
             });
@@ -28,24 +27,8 @@ function getWebEntities(url) {
     })
 }
 
-function _downloadImage(url) {
-    return new Promise((resolve, reject) => {
-        const options = {
-            url,
-            dest: path.join(path.resolve(__dirname), '..', 'public/user_images/landmark_recognizer/image.png')
-        }
 
-        download.image(options)
-            .then(({ filename }) => {
-                resolve(filename);
-            }).catch((err) => {
-                throw err
-            });
-    })
-}
-
-
-function _detect(filename) {
+const _detect = (filename) => {
     return new Promise((resolve, reject) => {
 
         vision.landmarkDetection({ source: { filename } })
@@ -67,7 +50,7 @@ function _detect(filename) {
 
 
 
-function _getWebResults(filename) {
+const _getWebResults = (filename) => {
     return new Promise((resolve, reject) => {
         vision.webDetection({ source: { filename } })
             .then((results) => {

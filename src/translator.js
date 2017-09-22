@@ -1,7 +1,9 @@
 const Translate = require('@google-cloud/translate');
 const translate = Translate();
+const Vision = require('@google-cloud/vision');
+const vision = Vision();
 
-function considerTranslation(article, targetLanguage) {
+const considerTranslation = (article, targetLanguage) => {
     return new Promise((resolve, reject) => {
         detectLanguage(article[0]).then(articleLanguage => {
             if (articleLanguage != targetLanguage) {
@@ -16,6 +18,19 @@ function considerTranslation(article, targetLanguage) {
                 resolve({ isTranslated: false });
             }
         });
+    });
+}
+
+const detectText = (filename) => {
+    return new Promise((resolve, reject) => {
+        vision.textDetection({ source: { filename } })
+            .then((results) => {
+                const detectedText = results[0].textAnnotations[0].description;
+                resolve(detectedText);
+            })
+            .catch((err) => {
+                console.error('ERROR:', err);
+            });
     });
 }
 

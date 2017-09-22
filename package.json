@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "app": "cd src && nodemon travelMate.js",
-    "backend": "cd src && nodemon similarityChecker.js"
+    "backend": "cd src && nodemon translator.js"
   },
   "author": "",
   "license": "ISC",
