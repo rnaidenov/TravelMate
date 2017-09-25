@@ -2,7 +2,9 @@ var restify = require('restify');
 var builder = require('botbuilder');
 const LandmarkRecognizer = require('./landmarkRecognizer');
 const FactFinder = require('./factFinder');
+const Translator = require('./translator');
 const SimilarityChecker = require('./similarityChecker');
+const fixTypoAdaptiveCard = require('./fixTypoAdaptiveCard');
 
 
 // Setup Restify Server
@@ -23,7 +25,7 @@ server.post('/api/messages', connector.listen());
 
 var bot = new builder.UniversalBot(connector, [
     function (session) {
-        session.beginDialog('travel');
+        session.beginDialog('translate');
     }
 ]);
 
@@ -41,9 +43,68 @@ var bot = new builder.UniversalBot(connector, [
 // })
 
 
-bot.dialog('translate',[
+bot.dialog('translate', [
     (session) => {
+        const attachments = session.message.attachments;
+
+        if (attachments && attachments.length > 0) {
+            session.dialogData.imageUrl ? null : session.dialogData.imageUrl = attachments[0].contentUrl;
+            session.beginDialog('detectSign', { imageUrl: session.dialogData.imageUrl });
+        }
+    },
+    (session,results) => {
+        if(results.response.isText) {
+            session.send("Awesome. Let me translate it then.");
+        } else {
+            const fixTypoCard = JSON.parse(fixTypoAdaptiveCard);
+            fixTypoCard.body.value = "Laina";
+            const fixTypoMsg = new builder.Message(session)
+            
+                .addAttachment({
+                    contentType: "application/vnd.microsoft.card.adaptive",
+                    content: fixTypoCard
+                })
+            session.send(fixTypoMsg);
+        }
+    }
+]);
+
+bot.dialog('detectSign', [
+    (session,args) => {
+        session.dialogData.imageUrl = args.imageUrl;
+        session.sendTyping();
+        setTimeout(() => {
+            session.send("Keep in mind that I'm not a much of a reader...")
+        },500);
+        session.sendTyping();
+        Translator.detectText(session.dialogData.imageUrl).then(detectedText => {
+            session.send(detectedText);
+            session.replaceDialog('verifyTextDetection');
+        });
+    }
+]);
+
+bot.dialog('verifyTextDetection',[
+    (session) => {
+        const verifyTextDetectionMsg = new builder.Message(session)
+                    .text("Did I get it?")
+                    .suggestedActions(
         
+                    builder.SuggestedActions.create(
+                        session, [
+                            builder.CardAction.imBack(session, "Yes, that's exactly what it says!", "Yes!"),
+                            builder.CardAction.imBack(session, "Nope, you've got a typo there.", "No.")
+                        ]
+                    ));
+        
+                builder.Prompts.text(session, verifyTextDetectionMsg);
+    },
+    (session, results) => {
+        let isText = false;
+        if(results.response.includes("Yes")) {
+            isText=true;
+        }
+        session.endDialogWithResult({ response : { isText } });
     }
 ]);
 

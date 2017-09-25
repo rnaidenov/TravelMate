@@ -1,7 +1,9 @@
 const Translate = require('@google-cloud/translate');
 const translate = Translate();
 const Vision = require('@google-cloud/vision');
+const ImageDownloader = require('./imageDownloader');
 const vision = Vision();
+
 
 const considerTranslation = (article, targetLanguage) => {
     return new Promise((resolve, reject) => {
@@ -21,18 +23,24 @@ const considerTranslation = (article, targetLanguage) => {
     });
 }
 
-const detectText = (filename) => {
+const detectText = (url) => {
     return new Promise((resolve, reject) => {
-        vision.textDetection({ source: { filename } })
-            .then((results) => {
-                const detectedText = results[0].textAnnotations[0].description;
-                resolve(detectedText);
-            })
-            .catch((err) => {
-                console.error('ERROR:', err);
-            });
+        ImageDownloader.download(url).then(filename => {
+            vision.textDetection({ source: { filename } })
+                .then((results) => {
+                    const detectedText = results[0].textAnnotations[0].description;
+                    // Newline to match format of image
+                    const textWithNewLines = detectedText.replace(/\n/g,'\n \n');
+                    resolve(textWithNewLines);
+                })
+                .catch((err) => {
+                    console.error('ERROR:', err);
+                });
+        })
     });
 }
+
+
 
 
 const detectLanguage = (text) => {
@@ -63,5 +71,6 @@ const translateArticle = (article, targetLanguage) => {
 }
 
 module.exports = {
-    considerTranslation
+    considerTranslation,
+    detectText
 }
