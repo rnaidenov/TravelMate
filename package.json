@@ -6,14 +6,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "app": "cd src && nodemon travelMate.js",
-    "backend": "cd src && nodemon similarityChecker.js"
+    "backend": "cd src && nodemon translator.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/translate": "^1.0.0",
     "@google-cloud/vision": "^0.12.0",
     "botbuilder": "^3.9.0",
+    "google-translate-api": "^2.3.0",
     "image-downloader": "^3.2.2",
     "nodemon": "^1.12.0",
     "request": "^2.81.0",

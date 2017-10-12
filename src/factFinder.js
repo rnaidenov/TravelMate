@@ -21,7 +21,6 @@ function summarizeArticle(landmark, targetLanguage) {
                 const { "sm_api_content": summary } = JSON.parse(body);
                 const article = summary.split('[BREAK]');
                 article.pop();
-
                 Translator.considerTranslation(article, targetLanguage).then(resolvedArticle => {
                     if (resolvedArticle.isTranslated) {
                         resolve(resolvedArticle.translation);
@@ -33,8 +32,6 @@ function summarizeArticle(landmark, targetLanguage) {
         });
     })
 }
-
-
 
 function _generateSearchUrl(landmark) {
 

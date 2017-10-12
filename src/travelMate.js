@@ -206,6 +206,7 @@ bot.dialog('learnMore', [
             session.sendTyping();
             var msg = new builder.Message(session);
             msg.attachmentLayout(builder.AttachmentLayout.carousel);
+            session.sendTyping();
             _getLandmarkInfo(landmark, session).then(factCards => {
                 msg.attachments(factCards);
                 session.send(msg).replaceDialog('anythingElse');
@@ -243,7 +244,7 @@ bot.dialog('cannotRecognize', [
         builder.Prompts.text(session, giveUpMessage);
     },
     (session, results) => {
-        const previousGuess = session.dialogData.previousGuess;
+        const previousGuess = session.dialogData.previousGuess || '';
         if (SimilarityChecker.check(previousGuess, results.response) > 0.85) {
             session.replaceDialog('areYouMessingWithMe', { previousGuess })
         } else {

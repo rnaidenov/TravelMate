@@ -5,5 +5,6 @@ module.exports = {
   googleCSEAPIKey : configValues.googleCSEAPIKey,
   googleCSE : configValues.googleCSE,
   googleCloudVisionApiKey : configValues.googleCloudVisionApiKey,
-  smmryApiKey : configValues.smmryApiKey
+  smmryApiKey : configValues.smmryApiKey,
+  languageDetectionApiKey : configValues.languageDetectionApiKey
 }

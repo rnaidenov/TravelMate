@@ -1,6 +1,7 @@
 {
-  "googleCSEAPIKey" : "AIzaSyCvSKmVLRbeJtFjUEDnv59dPE_lEXKSNeY",
+  "googleCSEAPIKey" : "AIzaSyCL2IwiU0rZwtRyr1scdaoIo8c5JVLLqTA",
   "googleCSE" : "011892692053400091128:g3olfxgls6g",
   "googleCloudVisionApiKey" : "AIzaSyBTUkHUMb0vrt7xgt6IbWyrH-A3LTA_3jI",
-  "smmryApiKey":"4101146502"
+  "smmryApiKey":"4101146502",
+  "languageDetectionApiKey":"bb844a36656a3b5db0de655e2e632948"
 }
